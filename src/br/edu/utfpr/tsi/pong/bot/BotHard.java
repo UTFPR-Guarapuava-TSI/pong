@@ -54,13 +54,13 @@ public class BotHard implements Bot {
 		}
 		if (gotThere) return 0;
 		if (yGoal == -1) {
-			yGoal = calcularDestino(x, y);
+			yGoal = calcDestiny(x, y);
 //			System.out.println(playerNumber + " Y=" + yGoal);
 			double[] tempX = Arrays.copyOf(x, 2);
 			double[] tempY = Arrays.copyOf(y, 2);
 			while (yGoal < 0 || yGoal > 240) {
-				atualizarPontos(tempX, tempY, yGoal);
-				yGoal = calcularDestino(tempX, tempY);
+				updatePoints(tempX, tempY, yGoal);
+				yGoal = calcDestiny(tempX, tempY);
 //				System.out.println(playerNumber + " Y=" + yGoal);
 			}
 		}
@@ -70,15 +70,15 @@ public class BotHard implements Bot {
 		return (int)Math.signum(me.getY() - yGoal);
 	}
 	
-	private double calcularDestino(double[] tempX, double[] tempY) {
+	private double calcDestiny(double[] tempX, double[] tempY) {
 		final double coeficienteAngular = (tempY[1] - tempY[0])/(tempX[1] - tempX[0]);
 		final double coeficienteLinear = tempY[0] - tempX[0]*coeficienteAngular;
-		System.out.println(playerNumber + " CA=" + coeficienteAngular
-				+ " CL=" + coeficienteLinear);
+//		System.out.println(playerNumber + " CA=" + coeficienteAngular
+//				+ " CL=" + coeficienteLinear);
 		return coeficienteAngular*playerBarX + coeficienteLinear;
 	}
 	
-	private void atualizarPontos(
+	private void updatePoints(
 			double[] tempX, double[] tempY, double yDestino) {
 		final double yVirada = yDestino < 0 ? 0 : 240;		
 		final double coeficienteAngular = (tempY[1] - tempY[0])/(tempX[1] - tempX[0]);
