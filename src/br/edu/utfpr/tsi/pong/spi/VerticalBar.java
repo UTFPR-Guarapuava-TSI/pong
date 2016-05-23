@@ -1,6 +1,6 @@
 package br.edu.utfpr.tsi.pong.spi;
 
-public interface Bar {
+public interface VerticalBar {
 
 	double getY();
 	

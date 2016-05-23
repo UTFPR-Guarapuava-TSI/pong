@@ -2,15 +2,15 @@ package br.edu.utfpr.tsi.pong.bot;
 
 import java.util.Arrays;
 
-import br.edu.utfpr.tsi.pong.Context;
 import br.edu.utfpr.tsi.pong.spi.Ball;
-import br.edu.utfpr.tsi.pong.spi.Bar;
 import br.edu.utfpr.tsi.pong.spi.Bot;
+import br.edu.utfpr.tsi.pong.spi.Direction;
+import br.edu.utfpr.tsi.pong.spi.VerticalBar;
 
 public class BotHard implements Bot {
 	private int playerNumber;
-	private Bar me;
-	private Bar other;
+	private VerticalBar me;
+	private VerticalBar other;
 	private Ball ball;
 	private double[] x = {160,160};
 	private double[] y = {120,120};
@@ -22,21 +22,24 @@ public class BotHard implements Bot {
 	private double playerNewPointX = -1;
 	
 	@Override
-	public void init(int playerNumber, Context context) {
-		this.playerNumber = playerNumber;
-		me = context.player1;
-		other = context.player2;
+	public void init(int yourPlayerNumber, Ball ball, VerticalBar player1, VerticalBar player2) {
+		this.playerNumber = yourPlayerNumber;
+		me = player1;
+		other = player2;
 		if (playerNumber == 2) {
 			playerBarX = 320;
 			playerNewPointX = 1;
-			me = context.player2;
-			other = context.player1;
+			me = player2;
+			other = player1;
 		}
-		ball = context.ball;
+		this.ball = ball;
 	}
 	
+	/**
+	 * Calculate where the ball goes
+	 */
 	@Override
-	public int calculate() {
+	public Direction calculate() {
 		x[0] = x[1];
 		y[0] = y[1];
 		x[1] = ball.getX();
@@ -44,47 +47,42 @@ public class BotHard implements Bot {
 		if (playerNumber == 1 && x[1] >= x[0]
 				|| playerNumber == 2 && x[1] <= x[0]) {
 			wait = true;
-			return (int)Math.signum(me.getY() - other.getY());
+			return Math.signum(me.getY() - other.getY()) == 1 ? Direction.UP : Direction.DOWN;
 		}
 		if (wait) {
 			wait = false;
 			gotThere = false;
 			yGoal = -1;
-			return (int)Math.signum(me.getY() - other.getY());
+			return Math.signum(me.getY() - other.getY()) == 1 ? Direction.UP : Direction.DOWN;
 		}
-		if (gotThere) return 0;
+		if (gotThere) return Direction.STAY;
 		if (yGoal == -1) {
-			yGoal = calcDestiny(x, y);
-//			System.out.println(playerNumber + " Y=" + yGoal);
+			yGoal = calcPath(x, y);
 			double[] tempX = Arrays.copyOf(x, 2);
 			double[] tempY = Arrays.copyOf(y, 2);
 			while (yGoal < 0 || yGoal > 240) {
 				updatePoints(tempX, tempY, yGoal);
-				yGoal = calcDestiny(tempX, tempY);
-//				System.out.println(playerNumber + " Y=" + yGoal);
+				yGoal = calcPath(tempX, tempY);
 			}
 		}
 		if (Math.abs(me.getY() - yGoal) < 1.0) {
 			gotThere = true;
 		}
-		return (int)Math.signum(me.getY() - yGoal);
+		return Math.signum(me.getY() - yGoal) == 1 ? Direction.UP : Direction.DOWN;
 	}
 	
-	private double calcDestiny(double[] tempX, double[] tempY) {
+	private double calcPath(double[] tempX, double[] tempY) {
 		final double coeficienteAngular = (tempY[1] - tempY[0])/(tempX[1] - tempX[0]);
 		final double coeficienteLinear = tempY[0] - tempX[0]*coeficienteAngular;
-//		System.out.println(playerNumber + " CA=" + coeficienteAngular
-//				+ " CL=" + coeficienteLinear);
 		return coeficienteAngular*playerBarX + coeficienteLinear;
 	}
 	
-	private void updatePoints(
-			double[] tempX, double[] tempY, double yDestino) {
+	private void updatePoints(double[] tempX, double[] tempY, double yDestino) {
 		final double yVirada = yDestino < 0 ? 0 : 240;		
 		final double coeficienteAngular = (tempY[1] - tempY[0])/(tempX[1] - tempX[0]);
 		final double coeficienteLinear = tempY[0] - tempX[0]*coeficienteAngular;
-//		y = ax + b
-//		(y - b)/a = x
+		// y = ax + b
+		// (y - b)/a = x
 		double xVirada = (yVirada - coeficienteLinear)/coeficienteAngular;		
 		tempX[0] = xVirada;
 		tempY[0] = yVirada;

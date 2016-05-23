@@ -2,91 +2,103 @@ package br.edu.utfpr.tsi.pong.obj;
 
 import java.util.Random;
 
+import br.edu.utfpr.tsi.pong.Const;
+import br.edu.utfpr.tsi.pong.spi.Ball;
 import jgame.JGColor;
 import jgame.JGObject;
 import jgame.platform.JGEngine;
-import br.edu.utfpr.tsi.pong.App;
-import br.edu.utfpr.tsi.pong.spi.Ball;
 
 public class SimpleBall extends JGObject implements Ball {
 	private static final String NAME = "ball";
 	private static final boolean UNIQUE_ID = true;
-	private static final int POSITION_START_X = App.WIDTH/2;
-	private static final int POSITION_START_Y = App.HEIGHT/2;
 	private static final String SPRITE = null;
-	
-	private static final int WIDTH = 8;
-	private static final int HEIGHT = 8;
-	private static final int SCREEN_X_MIN = WIDTH/2;
-	private static final int SCREEN_X_MAX = App.WIDTH - SCREEN_X_MIN;
-	private static final int SCREEN_Y_MIN = HEIGHT/2;
-	private static final int SCREEN_Y_MAX = App.HEIGHT - SCREEN_Y_MIN;
+	private static final int BALL_RADIUS = 4;
+	private static final int SCREEN_LIMIT_LEFT = BALL_RADIUS;
+	private static final int SCREEN_LIMIT_RIGHT = Const.SCREEN_WIDTH - BALL_RADIUS;
+	private static final int SCREEN_LIMIT_TOP = BALL_RADIUS;
+	private static final int SCREEN_LIMIT_BOTTOM = Const.SCREEN_HEIGHT - BALL_RADIUS;
 	private static final int MAX_SPEED = 7;
 	private static final double ACCELERATION = 1.05;
 
-	private final Random RANDOM;
+	private final Random random;
 	private final JGEngine engine;
 	private double radianAngle;
-	private JGColor color;
-	private int playerWin;
+	private JGColor ballColor;
 	private double ballSpeed;
 	
 	public SimpleBall (final JGEngine engine) {
-		super(NAME, UNIQUE_ID, 
-				POSITION_START_X, POSITION_START_Y,
-				App.COLLISION_ID_GLOBAL, SPRITE);
+		super(NAME, UNIQUE_ID, Const.SCREEN_CENTER_X, Const.SCREEN_CENTER_Y, Const.COLLISION_ID_GLOBAL, SPRITE);
 
 		this.engine = engine;
 		
-		RANDOM = new Random();
-//		 varia de 0.75 até 1.25
-		radianAngle = RANDOM.nextInt(16)/100.0 + 0.92;
-		radianAngle += RANDOM.nextInt(2); // esq ou dir
+		random = new Random();
+		radianAngle = random.nextInt(16)/100.0 + 0.92;
+		radianAngle += random.nextInt(2); // add zero or 1 PI
 		radianAngle *= Math.PI;
 		ballSpeed = 1.5;
 		xspeed = Math.cos(radianAngle) * ballSpeed;
 		yspeed = Math.sin(radianAngle) * ballSpeed;
-		color = JGColor.blue;
-		setBBox(-WIDTH/2, -HEIGHT/2, WIDTH, HEIGHT);
+		ballColor = JGColor.blue;
+		setBBox(-BALL_RADIUS, -BALL_RADIUS, BALL_RADIUS*2, BALL_RADIUS*2);
 	}
 
+	@Override
 	public void move() {
-		if (y > SCREEN_Y_MAX && yspeed > 0
-				|| y < SCREEN_Y_MIN && yspeed<0) {
+		if (y > SCREEN_LIMIT_BOTTOM && yspeed > 0 || y < SCREEN_LIMIT_TOP && yspeed < 0) {
 			yspeed = -yspeed;
 		}
-		
-		if (x > SCREEN_X_MAX) {
-			playerWin = 1;
-		} else if (x < SCREEN_X_MIN) {
-			playerWin = 2;
-		}
-	}
-
-	public int getPlayerWin() {
-		return playerWin;
 	}
 	
 	@Override
 	public void hit(JGObject obj) {
-		xspeed = -xspeed;
-		if (Math.abs(xspeed) < MAX_SPEED) {
-			xspeed *= ACCELERATION;
-//			xspeed = Math.cos(radianAngle) * ballSpeed;
-//			yspeed = Math.sin(radianAngle) * ballSpeed;
-			
-			yspeed = Math.signum(yspeed) * random(0,xspeed*1.25);
-			if (Math.abs(xspeed) > MAX_SPEED) {
-				xspeed = Math.signum(xspeed) * MAX_SPEED;
-			}
-			final int tempColor = (int)(255-(255/MAX_SPEED)*Math.abs(xspeed));
-			color = new JGColor(255-tempColor, 0, tempColor);
+		invertDirection();
+		if (!isMaxSpeed()) {
+			increaseSpeed();
+			changeBallColor();
 		}
 	}
+	
+	private void invertDirection() {
+		xspeed = -xspeed;
+	}
+	
+	private boolean isMaxSpeed() {
+		return Math.abs(xspeed) >= MAX_SPEED;
+	}
+	
+	private void increaseSpeed() {
+		xspeed *= ACCELERATION;
+		
+		yspeed = Math.signum(yspeed) * random(0,xspeed*1.25);
+		if (Math.abs(xspeed) > MAX_SPEED) {
+			xspeed = Math.signum(xspeed) * MAX_SPEED;
+		}
+	}
+	
+	/**
+	 * From blue to red
+	 */
+	private void changeBallColor() {
+		final int tempColor = (int)(255-(255/MAX_SPEED)*Math.abs(xspeed));
+		ballColor = new JGColor(255-tempColor, 0, tempColor);
+	}
 
+	@Override
 	public void paint() {
-		engine.setColor(color);
-		engine.drawOval(x,y,WIDTH,HEIGHT,true,true);
+		engine.setColor(ballColor);
+		engine.drawOval(x,y,BALL_RADIUS*2,BALL_RADIUS*2,true,true);
+	}
+	
+	public boolean reachedAnyLimit() {
+		return reachedLeftLimit() || reachedRightLimit();
+	}
+	
+	public boolean reachedLeftLimit() {
+		return x <= SCREEN_LIMIT_LEFT;
+	}
+	
+	public boolean reachedRightLimit() {
+		return x >= SCREEN_LIMIT_RIGHT;
 	}
 	
 	@Override

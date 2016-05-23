@@ -999,6 +999,11 @@ public abstract class JGEngine extends Applet implements JGEngineInterface {
 		init();
 	}
 
+
+	public void setCanvasSettings(int nrtilesx,int nrtilesy,int tilex,int tiley) {
+		setCanvasSettings(nrtilesx, nrtilesy, tilex, tiley, null, null, null);
+	}
+	
 	public void setCanvasSettings(int nrtilesx,int nrtilesy,int tilex,int tiley,
 	JGColor fgcolor, JGColor bgcolor, JGFont msgfont) {
 		el.nrtilesx=nrtilesx;
